@@ -438,7 +438,7 @@
   /* Prevent text size adjust on orientation */
   html { -webkit-text-size-adjust: 100%; }
   body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
-  /* Dialog full-screen on mobile */
+  /* Dialog full-screen on mobile — bottom sheet */
   .dialog-overlay { padding: 0; align-items: flex-end; }
   .dialog-box {
     max-width: 100% !important;
@@ -447,13 +447,61 @@
     border-radius: 1rem 1rem 0 0 !important;
     padding: 1.25rem !important;
   }
-  /* Product grid 2 cols on mobile */
-  .mobile-pos-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
-  .mobile-pos-grid button { font-size: 12px; }
-  .mobile-pos-grid .surface { border-radius: 0.75rem; }
-  /* Cart drawer */
+  /* ===== GLOBAL MOBILE BOTTOM NAV ===== */
+  .mobile-bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 45;
+    background: linear-gradient(to bottom, var(--topnav-from), var(--topnav-to));
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mobile-bottom-nav button { flex: 1; min-height: 0; }
+  /* ===== MOBILE MORE MENU OVERLAY ===== */
+  .mobile-more-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: flex-end; justify-content: center;
+    animation: fadeIn 0.15s ease;
+  }
+  .mobile-more-sheet {
+    width: 100%; max-width: 28rem;
+    background: var(--card);
+    border-radius: 1rem 1rem 0 0;
+    border-top: 1px solid var(--border);
+    padding: 0.75rem 1rem 1.5rem;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    animation: slideUp 0.2s ease;
+  }
+  .mobile-more-sheet .sheet-handle {
+    width: 2.5rem; height: 0.25rem; border-radius: 9999px;
+    background: var(--muted-foreground); margin: 0 auto 0.75rem;
+  }
+  .mobile-more-sheet button {
+    display: flex; align-items: center; gap: 0.75rem;
+    width: 100%; padding: 0.85rem 1rem; border-radius: 0.75rem;
+    font-size: 0.875rem; font-weight: 500; color: var(--foreground);
+    background: transparent; text-align: left;
+    transition: background 0.15s;
+    min-height: auto;
+  }
+  .mobile-more-sheet button:active { background: var(--accent); }
+  .mobile-more-sheet button.active {
+    background: color-mix(in srgb, var(--amber-500) 12%, transparent);
+    color: var(--amber-300);
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  /* ===== SCROLLABLE VIEW WRAPPER FOR MOBILE ===== */
+  .mobile-view-scroll {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom)) !important;
+  }
+  /* ===== POS MOBILE ===== */
+  .mobile-pos-wrap {
+    height: calc(100vh - 7.5rem - 3.5rem - 3.75rem) !important;
+    margin-bottom: 0 !important;
+  }
   .mobile-cart-drawer {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+    position: fixed; bottom: 3.75rem; left: 0; right: 0; z-index: 40;
     transform: translateY(calc(100% - 3.5rem));
     transition: transform 0.3s ease;
   }
@@ -462,19 +510,108 @@
     width: 2.5rem; height: 0.25rem; border-radius: 9999px;
     background: var(--muted-foreground); margin: 0 auto 0.5rem;
   }
-  /* Bottom nav for mobile */
-  .mobile-bottom-nav {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 45;
-    background: linear-gradient(to bottom, var(--topnav-from), var(--topnav-to));
-    backdrop-filter: blur(12px); border-top: 1px solid var(--border);
-    padding-bottom: env(safe-area-inset-bottom);
+  /* Product grid 2 cols on mobile */
+  .mobile-pos-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
+  .mobile-pos-grid button { font-size: 12px; }
+  .mobile-pos-grid .surface { border-radius: 0.75rem; }
+  /* ===== KITCHEN MOBILE ===== */
+  .kitchen-ticket-actions { flex-wrap: wrap; gap: 0.25rem !important; }
+  .kitchen-ticket-actions button { font-size: 9px !important; padding: 0.2rem 0.4rem !important; }
+  /* ===== CASHIER MOBILE ===== */
+  .cashier-layout { grid-template-columns: 1fr !important; }
+  .cashier-queue { max-height: 35vh !important; }
+  .cashier-detail-scroll { max-height: 50vh !important; }
+  /* ===== DASHBOARD MOBILE ===== */
+  .dash-period-btns { flex-wrap: wrap; }
+  .dash-period-btns button { flex: 0 0 auto; padding-left: 0.5rem; padding-right: 0.5rem; }
+  .dash-period-btns input[type=date] { width: 9rem; }
+  .dash-summary-cards { grid-template-columns: repeat(2, 1fr) !important; }
+  .dash-summary-cards .text-2xl { font-size: 1.25rem !important; }
+  .dash-sales-chart { height: 7rem !important; }
+  .dash-sales-chart .text-[8px] { font-size: 6px !important; }
+  .dash-3col { grid-template-columns: 1fr !important; }
+  .dash-status-payment { grid-template-columns: 1fr !important; }
+  .dash-recent-table { font-size: 11px !important; }
+  .dash-recent-table th, .dash-recent-table td { padding: 0.35rem 0.5rem !important; }
+  /* ===== REPORTS MOBILE ===== */
+  .report-tabs { gap: 0.25rem !important; }
+  .report-tabs button { padding: 0.4rem 0.75rem !important; font-size: 11px !important; }
+  .report-table-wrap { font-size: 11px !important; }
+  .report-table-wrap th, .report-table-wrap td { padding: 0.35rem 0.5rem !important; }
+  .report-summary-cards { grid-template-columns: repeat(2, 1fr) !important; }
+  /* ===== TABLES MOBILE ===== */
+  .tables-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .table-card-inner { padding: 0.5rem !important; }
+  /* ===== SETTINGS MOBILE ===== */
+  .settings-form { grid-template-columns: 1fr !important; }
+  .settings-invoice-cards { grid-template-columns: 1fr !important; }
+  /* ===== PRODUCTS TABLE MOBILE ===== */
+  .products-table-wrap { font-size: 11px !important; }
+  .products-table-wrap th, .products-table-wrap td { padding: 0.35rem 0.5rem !important; }
+  /* ===== CUSTOMERS MOBILE ===== */
+  .customers-grid { grid-template-columns: 1fr !important; }
+  /* ===== EXPENSES MOBILE ===== */
+  .expense-input-row { flex-direction: column !important; }
+  .expense-input-row input, .expense-input-row select { width: 100% !important; }
+  /* General: surface overflow-x for tables */
+  .surface { overflow-x: auto; }
+  /* Chart tooltip fix for touch */
+  .dash-sales-chart [class*="opacity-0"] { opacity: 1 !important; }
+  /* ===== TOP NAV MOBILE ===== */
+  .top-nav-bar { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  /* Ensure all full-height views account for bottom nav */
+  .mobile-full-view {
+    height: calc(100vh - 7.5rem - 3.75rem) !important;
+    padding-bottom: 0 !important;
   }
-  .mobile-bottom-nav button { flex: 1; min-height: 0; }
-  /* Make POS area full height minus bottom bars */
-  .mobile-pos-wrap {
-    height: calc(100vh - 7.5rem - 3.5rem - 3.5rem) !important;
-    margin-bottom: 7rem;
+  /* ===== CRITICAL: Fix ALL view heights for bottom nav ===== */
+  main > div:not(.mobile-pos-wrap):not(.mobile-full-view) {
+    height: calc(100vh - 7.5rem - 3.75rem) !important;
   }
+  /* ===== SAFE AREA: Bottom padding for scrollable views ===== */
+  main > div:not(.mobile-pos-wrap) {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+  }
+  /* ===== iOS INPUT ZOOM PREVENTION ===== */
+  input[type="text"], input[type="search"], input[type="url"], input[type="tel"], input[type="email"], input:not([type]), select, textarea { font-size: 16px !important; }
+  /* ===== CASHIER MOBILE (enhanced) ===== */
+  .cashier-layout {
+    grid-template-rows: auto 1fr !important;
+    overflow: hidden !important;
+  }
+  .cashier-layout > section { overflow-y: auto !important; }
+  .cashier-quick-cash { grid-template-columns: repeat(2, 1fr) !important; }
+  .cashier-pay-row { grid-template-columns: 1fr !important; }
+  /* ===== REPORTS MOBILE (enhanced) ===== */
+  .reports-view { flex-direction: column !important; }
+  .reports-view .grid-cols-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  /* ===== SETTINGS MOBILE (enhanced) ===== */
+  .settings-biz-grid { grid-template-columns: 1fr !important; }
+  .settings-invoice-grid { grid-template-columns: 1fr !important; }
+  /* ===== CATEGORIES MOBILE (enhanced) ===== */
+  .cat-card-actions { flex-wrap: wrap; gap: 0.25rem !important; }
+  .cat-card-actions button { font-size: 9px !important; padding: 0.15rem 0.4rem !important; }
+  /* ===== KITCHEN MOBILE (enhanced) ===== */
+  .kit-ticket-actions { flex-wrap: wrap; gap: 0.25rem !important; }
+  .kit-ticket-actions button { font-size: 9px !important; padding: 0.15rem 0.35rem !important; }
+  /* ===== ADD PRODUCT FORM MOBILE ===== */
+  .add-prod-details { grid-template-columns: 1fr !important; }
+  .add-prod-variant-header { grid-template-columns: 1fr 1fr auto !important; }
+  .add-prod-variant-row { grid-template-columns: 1fr 1fr auto !important; }
+  /* ===== TABLE PICKER DIALOG MOBILE ===== */
+  .table-picker-takeaway { grid-template-columns: repeat(2, 1fr) !important; }
+  .table-picker-dinein { grid-template-columns: repeat(2, 1fr) !important; }
+  /* ===== DIALOG FONT SIZE FIX ===== */
+  .dialog-box input[type="text"], .dialog-box input[type="search"], .dialog-box input:not([type]), .dialog-box select, .dialog-box textarea {
+    font-size: 16px !important;
+  }
+  /* ===== ORDERS MOBILE ===== */
+  .orders-grid { grid-template-columns: 1fr !important; }
+  /* ===== PRODUCT TABLE ACTIONS MOBILE ===== */
+  .prod-actions-cell { flex-direction: column; align-items: flex-end !important; gap: 0.25rem !important; }
+  /* ===== EXPENSES ADD FORM MOBILE ===== */
+  .expense-add-row { flex-direction: column !important; }
+  .expense-add-row input, .expense-add-row select { width: 100% !important; }
 }
 
 @media (min-width: 769px) {
@@ -1042,6 +1179,7 @@ let newProductVariants = [];
 let cashierSelectedId = null, cashierMethod = "cash", cashierTendered = "";
 let cashierQueueTab = "pending"; // "pending" (served) or "paid" (paid invoices for reprint)
 let mobileCartOpen = false;
+let mobileMenuOpen = false;
 let kitchenEditOrderId = null;
 let aoDialogOrderId = null;
 let aoDialogCat = "all";
@@ -1051,7 +1189,53 @@ const IS_MOBILE = window.innerWidth <= 768;
 window.addEventListener('resize', () => { location.reload(); });
 
 function render() {
-  document.getElementById("app").innerHTML = renderTopNav() + `<main class="flex-1 overflow-hidden">${renderView()}</main>` + renderAddToOrderDialog() + getEditProductForm() + getEditCategoryForm();
+  const mobileNav = IS_MOBILE ? renderMobileBottomNav() : '';
+  const moreMenu = IS_MOBILE && mobileMenuOpen ? renderMobileMoreMenu() : '';
+  document.getElementById("app").innerHTML = renderTopNav() + `<main class="flex-1 overflow-hidden">${renderView()}</main>` + renderAddToOrderDialog() + getEditProductForm() + getEditCategoryForm() + mobileNav + moreMenu;
+}
+
+function renderMobileBottomNav() {
+  const pc = state.orders.filter(o=>o.status==="preparing").length;
+  const mainTabs = NAV.slice(0,5);
+  return `<div class="mobile-bottom-nav flex items-stretch">
+    ${mainTabs.map(item => {
+      const a = state.view === item.key;
+      const badge = item.key==="kitchen"&&pc>0?`<span class="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 flex items-center justify-center rounded-full text-[8px] font-bold" style="background:var(--amber-500);color:var(--amber-950)">${pc}</span>`:"";
+      return `<button onclick="setView('${item.key}')" class="relative flex flex-col items-center justify-center py-1.5 gap-0.5" style="color:${a?'var(--amber-300)':'var(--muted-foreground)'}">
+        <span class="text-lg leading-none">${item.icon}</span>
+        <span class="text-[9px] font-medium">${item.label}</span>
+        ${a?`<span class="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full" style="background:var(--amber-500)"></span>`:""}
+        ${badge}
+      </button>`;
+    }).join("")}
+    <button onclick="mobileMenuOpen=true;render()" class="relative flex flex-col items-center justify-center py-1.5 gap-0.5" style="color:var(--muted-foreground)">
+      <span class="text-lg leading-none">⋯</span>
+      <span class="text-[9px] font-medium">More</span>
+    </button>
+  </div>`;
+}
+
+function renderMobileMoreMenu() {
+  const mainKeys = NAV.slice(0,5).map(n=>n.key);
+  const moreItems = NAV.filter(n => !mainKeys.includes(n.key));
+  const pc = state.orders.filter(o=>o.status==="preparing").length;
+  return `<div class="mobile-more-overlay" onclick="if(event.target===this){mobileMenuOpen=false;render()}">
+    <div class="mobile-more-sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="space-y-1">
+        ${moreItems.map(item => {
+          const a = state.view === item.key;
+          const badge = item.key==="kitchen"&&pc>0?`<span class="ml-auto h-5 w-5 flex items-center justify-center rounded-full text-[10px] font-bold" style="background:var(--amber-500);color:var(--amber-950)">${pc}</span>`:"";
+          return `<button onclick="mobileMenuOpen=false;setView('${item.key}')" class="${a?'active':''}">
+            <span class="text-lg">${item.icon}</span>
+            <span class="flex-1">${item.label}</span>
+            ${badge}
+            ${a?`<span class="text-xs" style="color:var(--amber-500)">●</span>`:""}
+          </button>`;
+        }).join("")}
+      </div>
+    </div>
+  </div>`;
 }
 
 function renderTopNav() {
@@ -1066,8 +1250,8 @@ function renderTopNav() {
   nav += `<select onchange="setView(this.value);this.value=''" class="hidden md:inline bg-transparent text-sm px-3 py-2 border-0 outline-none cursor-pointer" style="color:var(--muted-foreground)"><option value="">More ▾</option>`;
   overflow.forEach(item => { nav += `<option value="${item.key}" ${state.view===item.key?"selected":""}>${item.icon} ${item.label}</option>`; });
   nav += "</select><div class=\"ml-auto flex items-center pr-3 text-[11px]\" style=\"color:var(--muted-foreground)\"><span class=\"hidden lg:inline\">F1–F12 · </span><span>" + new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) + "</span></div></nav>";
-  return `<header class="sticky top-0 z-30 border-b backdrop-blur" style="border-color:color-mix(in srgb,var(--border) 80%,transparent);background:linear-gradient(to bottom,var(--topnav-from),var(--topnav-to))">
-    <div class="flex items-center justify-between px-4 py-2 border-b" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
+  return `<header class="top-nav-bar sticky top-0 z-30 border-b backdrop-blur" style="border-color:color-mix(in srgb,var(--border) 80%,transparent);background:linear-gradient(to bottom,var(--topnav-from),var(--topnav-to))">
+    <div class="flex items-center justify-between px-3 md:px-4 py-2 border-b" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
       <div class="flex items-center gap-2"><div class="flex h-8 w-8 items-center justify-center rounded-xl text-sm" style="background:var(--amber-500);color:var(--amber-950)">☕</div>
       <div class="leading-tight"><div class="flex items-center gap-1.5"><span class="text-sm font-semibold tracking-tight">${state.businessName}</span><span class="text-[9px] px-1 py-0 rounded" style="border:1px solid color-mix(in srgb,var(--amber-500) 40%,transparent);color:var(--amber-400)">POS</span></div>
       <div class="text-[10px] desktop-only" style="color:var(--muted-foreground)">${state.outletName} · Restaurant POS</div></div></div>
@@ -1240,24 +1424,6 @@ ${IS_MOBILE ? `
         </div>
       `:""}
     </div>
-
-    <!-- Mobile Bottom Nav -->
-    <div class="mobile-bottom-nav flex items-stretch">
-      ${NAV.slice(0,5).map(item => {
-        const a = state.view === item.key;
-        const badge = item.key==="kitchen"&&pc>0?`<span class="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 flex items-center justify-center rounded-full text-[8px] font-bold" style="background:var(--amber-500);color:var(--amber-950)">${pc}</span>`:"";
-        return `<button onclick="setView('${item.key}')" class="relative flex flex-col items-center justify-center py-1.5 gap-0.5" style="color:${a?'var(--amber-300)':'var(--muted-foreground)'}">
-          <span class="text-lg leading-none">${item.icon}</span>
-          <span class="text-[9px] font-medium">${item.label}</span>
-          ${a?`<span class="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full" style="background:var(--amber-500)"></span>`:""}
-          ${badge}
-        </button>`;
-      }).join("")}
-      <button onclick="document.querySelector('select option[value=\'expenses\']')?setView('expenses'):setView('expenses')" class="relative flex flex-col items-center justify-center py-1.5 gap-0.5" style="color:var(--muted-foreground)">
-        <span class="text-lg leading-none">⋯</span>
-        <span class="text-[9px] font-medium">More</span>
-      </button>
-    </div>
   ` : ""}
   </div>`;
 
@@ -1280,13 +1446,13 @@ ${IS_MOBILE ? `
             <button onclick="tablePickerProduct=null;render()" class="text-xl" style="color:var(--muted-foreground)">✕</button>
           </div>
           <div class="text-xs uppercase tracking-wide font-semibold mb-2" style="color:var(--muted-foreground)">☕ Takeaway</div>
-          <div class="grid grid-cols-2 gap-2 mb-4">
+          <div class="grid grid-cols-2 gap-2 mb-4 table-picker-takeaway">
             ${takeaway.map(t=>`<button onclick="selectTable('${t.label}')" class="rounded-lg border p-3 text-left transition-all" id="tbl-${t.label}" style="border-color:color-mix(in srgb,var(--border) 60%,transparent)"><div class="font-semibold text-sm">${t.label}</div><div class="text-[10px]" style="color:var(--muted-foreground)">Walk-in counter</div></button>`).join("")}
           </div>
           ${Object.entries(dineinByFloor).map(([fid, tables]) => {
             const fl = FLOORS.find(f=>f.id===fid)||FLOORS[0];
             return `<div class="flex items-center gap-2 mb-2 mt-3"><span class="text-xs uppercase tracking-wide font-semibold" style="color:${fl.color}">${fl.icon} ${fl.name}</span><span class="flex-1 h-px" style="background:color-mix(in srgb,${fl.color} 25%,transparent)"></span><span class="text-[10px]" style="color:var(--muted-foreground)">${tables.length} table${tables.length!==1?'s':''}</span></div>
-            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
+            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2 table-picker-dinein">
               ${tables.map(t=>{const occ=t.status==='occupied';return `<button ${occ?'disabled ':''}onclick="selectTable('${t.label}')" class="rounded-lg border p-3 text-left transition-all" id="tbl-${t.label}" style="border-color:${t.status==='free'?'color-mix(in srgb,#10b981 40%,transparent)':t.status==='reserved'?'color-mix(in srgb,var(--amber-500) 40%,transparent)':'color-mix(in srgb,#f43f5e 40%,transparent)'};opacity:${t.status==='free'?'1':'0.4'};${occ?'cursor:not-allowed;':''}"><div class="font-semibold text-sm">${t.label}</div><div class="text-[10px]" style="color:var(--muted-foreground)">${t.seats} seats · ${occ?'🚫 Occupied':t.status}</div></button>`;}).join("")}
             </div>`;
           }).join("")}
@@ -1411,7 +1577,7 @@ function renderKitchen() {
   // Count per kitchen
   const kitCounts = {};
   KITCHENS.forEach(k => { kitCounts[k.id] = allTickets.filter(o => o.items.some(i => (i.kitchenId||"main") === k.id)).length; });
-  return `<div class="h-[calc(100vh-7.5rem)] flex flex-col">
+  return `<div class="${IS_MOBILE?'mobile-full-view':''} flex flex-col">
     <div class="px-4 py-3 border-b" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div><h2 class="text-base font-semibold">Kitchen Display</h2>
@@ -1441,7 +1607,7 @@ function renderKitchen() {
           return `<article class="rounded-xl surface overflow-hidden ${urgent?'ring-2 ring-red-500/60':''}">
             <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color:color-mix(in srgb,var(--border) 40%,transparent);${o.status==='ready'?'background:color-mix(in srgb,#10b981 15%,transparent);color:#6ee7b7':urgent?'background:color-mix(in srgb,#ef4444 15%,transparent);color:#fca5a5':'background:color-mix(in srgb,var(--amber-500) 15%,transparent);color:var(--amber-300)'}">
               <div><span class="text-base font-bold">#${o.token}</span> <span class="text-[11px] opacity-80">${o.number}</span></div>
-              <div class="flex items-center gap-1.5"><div class="text-[11px]">\u23f1 ${mins}m</div>
+              <div class="flex items-center gap-1.5 kit-ticket-actions"><div class="text-[11px]">\u23f1 ${mins}m</div>
                 ${o.status==='preparing'?`<button onclick="openAddToOrderDialog('${o.id}')" class="text-[10px] px-2 py-1 rounded font-semibold" style="background:var(--amber-500);color:var(--amber-950)" title="Add product">+ Add Product</button>`:""}
                 ${o.status==='preparing'?`<button onclick="kitchenEditOrderId='${o.id}';render()" class="text-[10px] px-2 py-1 rounded font-medium" style="background:color-mix(in srgb,#3b82f6 20%,transparent);color:#93c5fd" title="Edit order items">✏ Edit</button>`:""}
                 <button onclick="printKitchenTicket('${o.id}','${kf}')" class="text-[10px] px-2 py-1 rounded font-medium" style="background:color-mix(in srgb,var(--amber-500) 20%,transparent);color:var(--amber-300)" title="Print full ticket">\ud83d\udda8</button>
@@ -1497,7 +1663,7 @@ function renderKitchen() {
             `:""}
             <div class="px-3 py-2 flex items-center justify-between" style="background:color-mix(in srgb,var(--card) 30%,transparent)">
               <span class="text-xs tabular-nums font-semibold" style="color:var(--amber-300)">${fmtMoney(o.total)}</span>
-              ${o.status==='preparing'?`<div class="flex items-center gap-1.5"><button onclick="cancelOrder('${o.id}')" class="text-[10px] px-2 py-1 rounded" style="background:color-mix(in srgb,#f43f5e 15%,transparent);color:#fda4af">Cancel</button><button onclick="markOrderReady('${o.id}')" class="text-xs px-2 py-1 rounded" style="background:#047857;color:#ecfdf5">\u2713 Ready</button></div>`:
+              ${o.status==='preparing'?`<div class="flex items-center gap-1.5 kitchen-ticket-actions"><button onclick="cancelOrder('${o.id}')" class="text-[10px] px-2 py-1 rounded" style="background:color-mix(in srgb,#f43f5e 15%,transparent);color:#fda4af">Cancel</button><button onclick="markOrderReady('${o.id}')" class="text-xs px-2 py-1 rounded" style="background:#047857;color:#ecfdf5">\u2713 Ready</button></div>`:
                 o.status==='ready'?`<button onclick="markServed('${o.id}')" class="text-xs px-2 py-1 rounded border" style="border-color:color-mix(in srgb,#10b981 40%,transparent);color:#6ee7b7">Send to Cashier \u2192</button>`:
                 `<span class="text-xs" style="color:var(--muted-foreground)">At cashier</span>`}
             </div>
@@ -1528,7 +1694,7 @@ function renderCashier() {
 
   const tabBtn = (key, label, count, icon) => `<button onclick="cashierQueueTab='${key}';cashierSelectedId=null;cashierTendered='';render()" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all" style="${isPaidTab=== (key==='paid')?'background:var(--amber-500);color:var(--amber-950)':'background:transparent;color:var(--muted-foreground)'}">${icon} ${label} <span class="text-[10px] px-1.5 py-0 rounded-full" style="${isPaidTab=== (key==='paid')?'background:color-mix(in srgb,var(--amber-950) 15%,transparent)':'background:color-mix(in srgb,var(--border) 60%,transparent)'}">${count}</span></button>`;
 
-  return `<div class="h-[calc(100vh-7.5rem)] grid grid-cols-1 lg:grid-cols-[20rem_minmax(0,1fr)]">
+  return `<div class="cashier-layout h-[calc(100vh-7.5rem)] grid grid-cols-1 lg:grid-cols-[20rem_minmax(0,1fr)]">
     <aside class="border-r flex flex-col min-h-0 max-h-[35vh] lg:max-h-full overflow-y-auto" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
       <div class="px-3 py-3 border-b" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
         <div class="flex items-center gap-1 p-1 rounded-lg" style="background:color-mix(in srgb,var(--border) 30%,transparent)">
@@ -1579,13 +1745,13 @@ function renderCashier() {
         ${cashierMethod==="cash"?`<div class="space-y-3">
           <div><div class="text-sm font-medium mb-2">Amount Tendered</div>
             <input type="number" value="${cashierTendered}" oninput="cashierTendered=this.value;render();this.focus()" placeholder="0.00" class="w-full rounded-md px-3 py-3 text-2xl font-semibold tabular-nums" style="background:var(--input);color:var(--foreground)"/></div>
-          <div class="grid grid-cols-4 gap-2">
+          <div class="grid grid-cols-4 gap-2 cashier-quick-cash">
             ${[selected.total,Math.ceil(selected.total/100)*100,Math.ceil(selected.total/500)*500,Math.ceil(selected.total/1000)*1000].map(amt=>`<button onclick="cashierTendered='${amt}';render()" class="text-xs h-9 rounded border" style="background:var(--card);border-color:color-mix(in srgb,var(--border) 60%,transparent);color:var(--foreground)">${fmtMoney(amt)}</button>`).join("")}
           </div>
           <div class="flex items-center justify-between surface rounded-lg px-4 py-3"><span class="text-sm" style="color:var(--muted-foreground)">Change Due</span><span class="text-xl font-bold tabular-nums" style="color:#6ee7b7">${fmtMoney(change)}</span></div>
           ${cashInsufficient?`<div class="rounded-lg border px-4 py-2.5 text-sm" style="border-color:color-mix(in srgb,#f43f5e 40%,transparent);background:color-mix(in srgb,#f43f5e 10%,transparent);color:#fda4af">⚠ Insufficient cash — tendered ${fmtMoney(Number(cashierTendered||0))} is less than total ${fmtMoney(selected.total)}. Please enter at least ${fmtMoney(selected.total)} or use quick-cash buttons above.</div>`:""}
         </div>`:""}
-        <div class="grid grid-cols-[1fr_auto] gap-2">
+        <div class="grid grid-cols-[1fr_auto] gap-2 cashier-pay-row">
           <button onclick="${canPay?`payOrder('${selected.id}',cashierMethod,cashierMethod==='cash'?Number(cashierTendered||0):${selected.total})`:`alert('Insufficient cash — please enter at least ${fmtMoney(selected.total)}')`}" class="font-semibold rounded-md py-3" style="${canPay?'background:#047857;color:#ecfdf5;cursor:pointer':'background:#374151;color:#9ca3af;cursor:not-allowed'}" ${!canPay?'disabled':''}>✓ Complete Payment</button>
           <button onclick="printInvoice('${selected.id}')" class="flex items-center gap-1.5 px-4 rounded-md py-3 font-semibold whitespace-nowrap" style="background:color-mix(in srgb,var(--amber-500) 18%,transparent);color:var(--amber-300);border:1px solid color-mix(in srgb,var(--amber-500) 50%,transparent)" title="Print customer invoice">🖨 Print Invoice</button>
         </div>
@@ -1752,7 +1918,7 @@ function renderDashboard() {
     <!-- Period Tabs -->
     <div class="flex items-center justify-between flex-wrap gap-3">
       <h2 class="text-base font-semibold">Dashboard Activity</h2>
-      <div class="flex items-center gap-2 flex-wrap">
+      <div class="dash-period-btns flex items-center gap-2 flex-wrap">
         <div class="flex items-center gap-1 p-1 rounded-lg" style="background:var(--card);border:1px solid color-mix(in srgb,var(--border) 40%,transparent)">
           ${["daily","weekly","monthly","custom"].map(p => {
             const pl = p==="daily"?"Daily":p==="weekly"?"Weekly":p==="monthly"?"Monthly":"Pick Date";
@@ -1765,7 +1931,7 @@ function renderDashboard() {
     <div class="text-[11px]" style="color:var(--muted-foreground)">${dashPeriod==="custom"?`Selected Date: ${label}`:`${periodLabelShort} &middot; ${label}`}</div>
 
     <!-- KPI Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="dash-summary-cards grid grid-cols-2 lg:grid-cols-4 gap-3">
       ${[
         {l:"Total Sales",v:fmtMoney(totalSales),h:totalOrders+" orders",bg:"color-mix(in srgb,var(--amber-500) 10%,transparent)",bd:"color-mix(in srgb,var(--amber-500) 30%,transparent)",c:"var(--amber-300)"},
         {l:"Avg Order Value",v:fmtMoney(avgOrder),h:"Per order",bg:"color-mix(in srgb,#3b82f6 10%,transparent)",bd:"color-mix(in srgb,#3b82f6 30%,transparent)",c:"#93c5fd"},
@@ -1775,12 +1941,12 @@ function renderDashboard() {
     </div>
 
     <!-- Sales Chart + Status + Payment -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+    <div class="dash-status-payment grid grid-cols-1 lg:grid-cols-3 gap-3">
       <!-- Sales Chart -->
       <div class="lg:col-span-2 surface rounded-xl p-4">
         <h3 class="text-sm font-semibold mb-3">Sales Overview ${dashPeriod==="daily"||dashPeriod==="custom"?"(Hourly)":dashPeriod==="weekly"?"(By Day)":"(By Day of Month)"}</h3>
         ${totalOrders===0?`<div class="text-sm py-8 text-center" style="color:var(--muted-foreground)">No orders in this period.</div>`:
-        `<div class="flex items-end gap-[2px] h-36">
+        `<div class="dash-sales-chart flex items-end gap-[2px] h-36">
           ${dailyBreakdown.map(d => {
             const h = Math.max((d.sales / maxBarSales) * 100, 2);
             const isActive = d.sales > 0;
@@ -1837,7 +2003,7 @@ function renderDashboard() {
     </div>
 
     <!-- Top Products + Category Breakdown + Expenses -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+    <div class="dash-3col grid grid-cols-1 lg:grid-cols-3 gap-3">
       <!-- Top Products -->
       <div class="lg:col-span-1 surface rounded-xl p-4">
         <div class="flex items-center justify-between mb-3"><h3 class="text-sm font-semibold">Top Products</h3><button onclick="printDashboard('products')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style="background:var(--amber-500);color:var(--amber-950)">🖨 Print</button></div>
@@ -1882,18 +2048,18 @@ function renderDashboard() {
     <div class="surface rounded-xl p-4">
       <h3 class="text-sm font-semibold mb-3">Recent Activity</h3>
       ${recentOrders.length===0?`<div class="text-sm py-6 text-center" style="color:var(--muted-foreground)">No orders in this period.</div>`:
-      `<div class="overflow-x-auto"><table class="w-full text-sm">
+      `<div class="dash-recent-table overflow-x-auto"><table class="w-full text-sm">
         <thead class="text-[10px] uppercase" style="color:var(--muted-foreground)"><tr>
-          <th class="text-left px-2 py-2">Time</th><th class="text-left px-2 py-2">Order</th><th class="text-left px-2 py-2">Customer</th><th class="text-left px-2 py-2">Items</th><th class="text-left px-2 py-2">Payment</th><th class="text-right px-2 py-2">Total</th><th class="text-center px-2 py-2">Status</th>
+          <th class="text-left px-2 py-2">Time</th><th class="text-left px-2 py-2 desktop-only">Order#</th><th class="text-left px-2 py-2">Customer</th><th class="text-left px-2 py-2 desktop-only">Items</th><th class="text-left px-2 py-2 desktop-only">Pay</th><th class="text-right px-2 py-2">Total</th><th class="text-center px-2 py-2">Status</th>
         </tr></thead>
         <tbody>${recentOrders.map(o => {
           const sc = {preparing:"background:color-mix(in srgb,var(--amber-500) 20%,transparent);color:var(--amber-300)",ready:"background:color-mix(in srgb,#0ea5e9 20%,transparent);color:#7dd3fc",served:"background:color-mix(in srgb,#8b5cf6 20%,transparent);color:#c4b5fd",paid:"background:color-mix(in srgb,#10b981 20%,transparent);color:#6ee7b7"}[o.status]||"";
           return `<tr class="border-t" style="border-color:color-mix(in srgb,var(--border) 20%,transparent)">
             <td class="px-2 py-2 text-xs tabular-nums" style="color:var(--muted-foreground)">${new Date(o.createdAt).toLocaleString("en-US",{hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"})}</td>
-            <td class="px-2 py-2 font-medium">#${o.token}</td>
+            <td class="px-2 py-2 font-medium desktop-only">#${o.token}</td>
             <td class="px-2 py-2 truncate max-w-[120px]">${o.customerName}</td>
-            <td class="px-2 py-2 text-xs" style="color:var(--muted-foreground)">${o.items.length} item${o.items.length!==1?"s":""}</td>
-            <td class="px-2 py-2 text-xs capitalize">${o.paymentMethod||"—"}${o.paidAt?" <span style='color:#6ee7b7'>&#10003;</span>":""}</td>
+            <td class="px-2 py-2 text-xs desktop-only" style="color:var(--muted-foreground)">${o.items.length} item${o.items.length!==1?"s":""}</td>
+            <td class="px-2 py-2 text-xs capitalize desktop-only">${o.paymentMethod||"—"}${o.paidAt?" <span style='color:#6ee7b7'>&#10003;</span>":""}</td>
             <td class="px-2 py-2 text-right font-semibold tabular-nums" style="color:var(--amber-300)">${fmtMoney(o.total)}</td>
             <td class="px-2 py-2 text-center"><span class="text-[10px] px-2 py-0.5 rounded-full" style="${sc}">${o.status}</span></td>
           </tr>`;
@@ -1907,7 +2073,7 @@ function renderDashboard() {
 function renderOrders() {
   return `<div class="h-[calc(100vh-7.5rem)] overflow-y-auto p-4">
     <h2 class="text-base font-semibold mb-3">Orders (${state.orders.length})</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 orders-grid">
       ${state.orders.map(o => {
         const due = o.total - o.paid;
         const sc = {preparing:"background:color-mix(in srgb,var(--amber-500) 20%,transparent);color:var(--amber-300);border:1px solid color-mix(in srgb,var(--amber-500) 40%,transparent)",ready:"background:color-mix(in srgb,#0ea5e9 20%,transparent);color:#7dd3fc;border:1px solid color-mix(in srgb,#0ea5e9 40%,transparent)",served:"background:color-mix(in srgb,#8b5cf6 20%,transparent);color:#c4b5fd;border:1px solid color-mix(in srgb,#8b5cf6 40%,transparent)",paid:"background:color-mix(in srgb,#10b981 20%,transparent);color:#6ee7b7;border:1px solid color-mix(in srgb,#10b981 40%,transparent)",cancelled:"background:color-mix(in srgb,#f43f5e 20%,transparent);color:#fda4af;border:1px solid color-mix(in srgb,#f43f5e 40%,transparent)"}[o.status];
@@ -1945,7 +2111,7 @@ function renderProducts() {
         </div>
       </div>
     </div>
-    <div class="surface rounded-xl overflow-x-auto"><div class="min-w-[500px]"><table class="w-full text-sm">
+    <div class="products-table-wrap surface rounded-xl overflow-x-auto"><div class="min-w-[500px]"><table class="w-full text-sm">
         <thead class="text-xs uppercase" style="background:color-mix(in srgb,var(--card) 40%,transparent);color:var(--muted-foreground)"><tr><th class="text-left px-4 py-3">Product</th><th class="text-left px-4 py-3">Category</th><th class="text-left px-4 py-3">Kitchen / Printer</th><th class="text-right px-4 py-3">Price</th><th class="text-right px-4 py-3">Actions</th></tr></thead>
         <tbody>
           ${filtered.map(p => { const cat = CATEGORIES.find(c=>c.id===p.categoryId); const kit = getProductKitchen(p);
@@ -1957,7 +2123,7 @@ function renderProducts() {
               <td class="px-4 py-2.5"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium" style="background:color-mix(in srgb,${kit.color} 15%,transparent);color:${kit.color};border:1px solid color-mix(in srgb,${kit.color} 30%,transparent)">${kit.icon} ${kit.name}</span></td>
               <td class="px-4 py-2.5 text-right font-semibold tabular-nums" style="color:var(--amber-300)">${p.variants?fmtMoney(Math.min(...p.variants.map(v=>v.price)))+" - "+fmtMoney(Math.max(...p.variants.map(v=>v.price))):fmtMoney(p.price)}</td>
               <td class="px-4 py-2.5 text-right">
-                <div class="flex items-center justify-end gap-1">
+                <div class="flex items-center justify-end gap-1 prod-actions-cell">
                   <button onclick="startEditProduct('${p.id}')" class="text-[10px] px-2 py-1 rounded font-medium" style="background:color-mix(in srgb,#3b82f6 15%,transparent);color:#93c5fd" title="Edit product">&#9998; Edit</button>
                   <button onclick="deleteProduct('${p.id}')" class="text-[10px] px-2 py-1 rounded font-medium" style="background:color-mix(in srgb,#f43f5e 15%,transparent);color:#fda4af" title="Delete product">&#10005; Del</button>
                 </div>
@@ -1993,7 +2159,7 @@ function renderCategories() {
           <div class="p-3">
             <div class="flex justify-between items-start">
               <div><h3 class="font-semibold">${c.name}</h3><span class="text-[11px]" style="color:var(--muted-foreground)">${count} products</span></div>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1 cat-card-actions">
                 <button onclick="startEditCategory('${c.id}')" class="text-[10px] px-2 py-1 rounded font-medium" style="background:color-mix(in srgb,#3b82f6 15%,transparent);color:#93c5fd" title="Edit name">&#9998; Edit</button>
                 <button onclick="deleteCategory('${c.id}')" class="text-[10px] px-2 py-1 rounded font-medium" style="background:color-mix(in srgb,#f43f5e 15%,transparent);color:#fda4af" title="Delete">&#10005; Del</button>
                 <button onclick="editingCategory='${c.id}';render()" class="text-[10px] px-2 py-1 rounded border" style="border-color:color-mix(in srgb,${kit.color} 40%,transparent);color:${kit.color}">Printer</button>
@@ -2651,7 +2817,7 @@ function renderReports() {
     </div>`;
   }
 
-  return `<div class="h-[calc(100vh-7.5rem)] overflow-y-auto p-4 space-y-4">
+  return `<div class="h-[calc(100vh-7.5rem)] overflow-y-auto p-4 space-y-4 reports-view">
     <div class="flex items-center justify-between flex-wrap gap-2">
       <h2 class="text-base font-semibold">\ud83d\udcca Reports</h2>
       ${tabsBar}
@@ -2678,7 +2844,7 @@ function renderSettings() {
       <h2 class="text-base font-semibold">⚙ Settings</h2>
       <div class="surface rounded-xl p-5 space-y-4">
         <h3 class="text-sm font-semibold">Business Profile</h3>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-3 settings-biz-grid">
           <label>Business Name<input value="${state.businessName}" oninput="state.businessName=this.value;saveState()" class="block w-full rounded px-2 py-1.5 text-sm mt-1" style="background:var(--input);color:var(--foreground)"/></label>
           <label>Outlet Name<input value="${state.outletName}" oninput="state.outletName=this.value;saveState()" class="block w-full rounded px-2 py-1.5 text-sm mt-1" style="background:var(--input);color:var(--foreground)"/></label>
           <label>Currency<input value="${state.currency}" oninput="state.currency=this.value;saveState()" class="block w-full rounded px-2 py-1.5 text-sm mt-1" style="background:var(--input);color:var(--foreground)"/></label>
@@ -2694,7 +2860,7 @@ function renderSettings() {
           <span id="invoiceSaveMsg" class="text-xs font-semibold px-3 py-1 rounded-full ${invoiceSettingsSaved?'':'hidden'}" style="background:color-mix(in srgb,#10b981 15%,transparent);color:#6ee7b7">✓ Saved</span>
         </div>
         <p class="text-[11px]" style="color:var(--muted-foreground)">Configure how taxes and service charges appear on invoices.</p>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-4 settings-invoice-grid">
           <div class="rounded-xl border p-4 space-y-3" style="border-color:color-mix(in srgb,var(--amber-500) 25%,transparent);background:color-mix(in srgb,var(--amber-500) 5%,transparent)">
             <div class="flex items-center gap-2"><span class="text-base">🏥</span><div><div class="text-sm font-semibold">Dine-in Service Fee</div><div class="text-[10px]" style="color:var(--muted-foreground)">Auto-applied % for dine-in orders</div></div></div>
             <div class="flex items-center gap-2">
@@ -2866,7 +3032,7 @@ function renderAddProductForm() {
         <!-- Product Details -->
         <div>
           <h4 class="text-xs font-semibold mb-3" style="color:var(--muted-foreground)">PRODUCT DETAILS</h4>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-3 add-prod-details">
             <div>
               <label class="text-[11px] font-medium" style="color:var(--muted-foreground)">Stock (pieces)</label>
               <input id="new-prod-stock" type="number" min="0" value="100" class="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none" style="background:var(--input);border:1px solid color-mix(in srgb,var(--border) 60%,transparent);color:var(--foreground)"/>
@@ -2887,11 +3053,11 @@ function renderAddProductForm() {
           </div>
           ${newProductVariants.length > 0 ? `
             <div class="space-y-2 mb-2">
-              <div class="grid grid-cols-[1fr_1fr_2.25rem] gap-2 text-[10px] font-semibold uppercase" style="color:var(--muted-foreground)">
+              <div class="grid grid-cols-[1fr_1fr_2.25rem] gap-2 text-[10px] font-semibold uppercase add-prod-variant-header" style="color:var(--muted-foreground)">
                 <span>Size / Label</span><span>Price (${state.currency || "Rs"})</span><span></span>
               </div>
               ${newProductVariants.map((v, i) => `
-                <div class="grid grid-cols-[1fr_1fr_2.25rem] gap-2 items-center">
+                <div class="grid grid-cols-[1fr_1fr_2.25rem] gap-2 items-center add-prod-variant-row">
                   <input id="var-label-${i}" type="text" value="${v.label}" placeholder="e.g. Small, Large" class="rounded-lg px-3 py-2 text-sm outline-none" style="background:var(--input);border:1px solid color-mix(in srgb,var(--border) 60%,transparent);color:var(--foreground)" oninput="updateVariant(${i},'label',this.value)"/>
                   <input id="var-price-${i}" type="number" step="0.01" min="0" value="${v.price}" placeholder="0.00" class="rounded-lg px-3 py-2 text-sm outline-none tabular-nums" style="background:var(--input);border:1px solid color-mix(in srgb,var(--border) 60%,transparent);color:var(--foreground)" oninput="updateVariant(${i},'price',parseFloat(this.value)||0)"/>
                   <button onclick="removeVariant(${i})" class="h-8 w-8 flex items-center justify-center rounded-lg text-sm transition-all" style="background:color-mix(in srgb,#f43f5e 12%,transparent);color:#fda4af" title="Remove this size">&#10005;</button>
