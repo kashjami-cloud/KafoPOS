@@ -625,7 +625,7 @@
 <script>
 const CATEGORIES = [{"id": "cat-starter", "name": "Starter", "color": "from-amber-700 to-amber-900", "kitchenId": "main"}, {"id": "cat-burger", "name": "Burger", "color": "from-red-700 to-amber-900", "kitchenId": "grill"}, {"id": "cat-pizza-regular", "name": "Regular Pizza", "color": "from-rose-700 to-red-950", "kitchenId": "main"}, {"id": "cat-pizza-special", "name": "Special Pizza", "color": "from-orange-700 to-rose-950", "kitchenId": "main"}, {"id": "cat-sandwich", "name": "Sandwich", "color": "from-yellow-700 to-orange-900", "kitchenId": "main"}, {"id": "cat-wraps", "name": "Wraps", "color": "from-emerald-700 to-emerald-900", "kitchenId": "main"}, {"id": "cat-pasta", "name": "Pasta", "color": "from-amber-600 to-orange-900", "kitchenId": "main"}, {"id": "cat-rolls", "name": "Rolls", "color": "from-orange-700 to-amber-950", "kitchenId": "grill"}, {"id": "cat-fries", "name": "Fries", "color": "from-yellow-600 to-amber-900", "kitchenId": "grill"}, {"id": "cat-special-fries", "name": "Special Fries", "color": "from-amber-600 to-red-950", "kitchenId": "grill"}, {"id": "cat-beverages", "name": "Beverages", "color": "from-sky-700 to-slate-900", "kitchenId": "bar"}, {"id": "cat-fresh-cone", "name": "Special Fresh Cone", "color": "from-pink-700 to-fuchsia-950", "kitchenId": "dessert"}, {"id": "cat-sundae", "name": "Special Ice Cream Sundae", "color": "from-fuchsia-700 to-purple-950", "kitchenId": "dessert"}, {"id": "cat-scoop", "name": "Scoop Ice Cream", "color": "from-violet-700 to-indigo-950", "kitchenId": "dessert"}, {"id": "cat-shakes", "name": "Ice Cream Shakes", "color": "from-purple-700 to-fuchsia-950", "kitchenId": "dessert"}, {"id": "cat-topping", "name": "Topping", "color": "from-teal-700 to-cyan-950", "kitchenId": "dessert"}, {"id": "cat-coffee", "name": "Coffee", "color": "from-amber-800 to-stone-950", "kitchenId": "coffee"}];
 
-const KITCHENS = [
+let KITCHENS = [
   { id: "main",    name: "Main Kitchen",     icon: "\ud83e\udd5c", color: "#f59e0b" },
   { id: "bar",     name: "Bar / Beverages",  icon: "\ud83c\udf79", color: "#3b82f6" },
   { id: "grill",   name: "Grill Station",    icon: "\ud83d\udd25", color: "#ef4444" },
@@ -1194,7 +1194,7 @@ const NAV = [
 ];
 
 let activeCategory = "all", searchQuery = "", pickerProduct = null, tablePickerProduct = null, editingCategory = null, editingProductId = null, editingCategoryId = null, activeKitchenFilter = "all";
-let showAddProductForm = false, showAddCategoryForm = false;
+let showAddProductForm = false, showAddCategoryForm = false, showAddKitchenForm = false;
 let newProductImage = null;
 let newProductVariants = [];
 let cashierSelectedId = null, cashierMethod = "cash", cashierTendered = "";
@@ -2922,7 +2922,10 @@ function renderSettings() {
         <p class="text-[10px] mt-2" style="color:var(--muted-foreground)"><b>Init</b> resets only orders & expenses. <b>Reset Everything</b> restores all settings to defaults.</p>
       </div>
       <div class="surface rounded-xl p-5">
-        <h3 class="text-sm font-semibold mb-1">Kitchen / Printer Stations</h3>
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-semibold">Kitchen / Printer Stations (${KITCHENS.length})</h3>
+          <button onclick="showAddKitchenForm=true;render()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:brightness-110" style="background:var(--amber-500);color:var(--amber-950)"><span class="text-sm">+</span> Add Kitchen Printer</button>
+        </div>
         <p class="text-[11px] mb-3" style="color:var(--muted-foreground)">Each category is assigned to a kitchen station. Orders print to the category's assigned printer.</p>
         <div class="space-y-3">
           ${KITCHENS.map(k => {
@@ -2932,6 +2935,7 @@ function renderSettings() {
               <div class="flex items-center gap-3 px-3 py-2.5" style="background:color-mix(in srgb,${k.color} 8%,transparent)">
                 <span class="h-8 w-8 rounded-lg flex items-center justify-center text-lg" style="background:color-mix(in srgb,${k.color} 20%,transparent)">${k.icon}</span>
                 <div class="flex-1"><div class="text-sm font-semibold" style="color:${k.color}">${k.name}</div><div class="text-[11px]" style="color:var(--muted-foreground)">${prodCount} products · ${cats.length} categories</div></div>
+                ${KITCHENS.length > 1 ? `<button onclick="removeKitchenPrinter('${k.id}')" class="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md border font-medium transition-all hover:brightness-110" style="border-color:color-mix(in srgb,#f43f5e 40%,transparent);color:#fda4af;background:color-mix(in srgb,#f43f5e 10%,transparent)">✕ Remove</button>` : ""}
                 <span class="h-3 w-3 rounded-full" style="background:${k.color}"></span>
               </div>
               <div class="px-3 py-2 flex flex-wrap gap-1.5">
@@ -2942,11 +2946,78 @@ function renderSettings() {
           }).join("")}
         </div>
         <button onclick="setView('categories')" class="mt-3 text-xs px-3 py-1.5 rounded-md border font-medium" style="border-color:color-mix(in srgb,var(--amber-500) 40%,transparent);color:var(--amber-300)">Edit Category Assignments →</button>
+        ${showAddKitchenForm ? renderAddKitchenForm() : ""}
       </div>
     </div>
   </div>`;
 }
 
+
+// ============ ADD KITCHEN PRINTER FORM ============
+function renderAddKitchenForm() {
+  const iconOptions = ["🍳","🔥","🧊","🥤","🍕","🍜","🥗","🧁","🍩","🥩","🍣","🌮","🥘","🍱","🫕","🧑‍🍳"];
+  const colorOptions = ["#f59e0b","#3b82f6","#ef4444","#ec4899","#8b5cf6","#10b981","#f97316","#06b6d4","#6366f1","#14b8a6","#e11d48","#84cc16"];
+  return `<div class="dialog-overlay" onclick="if(event.target===this){showAddKitchenForm=false;render()}">
+    <div class="dialog-box" style="max-width:32rem" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-semibold">Add Kitchen Printer Station</h3>
+        <button onclick="showAddKitchenForm=false;render()" class="text-xl leading-none" style="color:var(--muted-foreground)">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--muted-foreground)">Station Name</label>
+          <input id="new-kitchen-name" type="text" placeholder="e.g. Sushi Bar, Juice Bar..." class="w-full rounded-lg px-3 py-2.5 text-sm outline-none" style="background:var(--input);border:1px solid color-mix(in srgb,var(--border) 60%,transparent);color:var(--foreground)" autofocus/>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--muted-foreground)">Icon</label>
+          <div class="grid grid-cols-8 gap-1.5" id="kitchen-icon-picker">
+            ${iconOptions.map((ic,i) => `<button type="button" onclick="document.querySelectorAll('#kitchen-icon-picker button').forEach(b=>b.style.outline='none');this.style.outline='2px solid var(--amber-500)';this.dataset.selected='1'" data-icon="${ic}" class="h-10 w-10 rounded-lg border flex items-center justify-center text-lg transition-all hover:brightness-110" style="border-color:color-mix(in srgb,var(--border) 60%,transparent);${i===0?'outline:2px solid var(--amber-500)':''}">${ic}</button>`).join("")}
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1.5" style="color:var(--muted-foreground)">Color</label>
+          <div class="grid grid-cols-6 gap-2" id="kitchen-color-picker">
+            ${colorOptions.map((c,i) => `<button type="button" onclick="document.querySelectorAll('#kitchen-color-picker button').forEach(b=>b.style.outline='none');this.style.outline='2px solid var(--foreground)';this.dataset.selected='1'" data-color="${c}" class="h-8 w-8 rounded-full border-2 transition-all hover:scale-110" style="background:${c};border-color:transparent;${i===0?'outline:2px solid var(--foreground)':''}"></button>`).join("")}
+          </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button onclick="showAddKitchenForm=false;render()" class="flex-1 border rounded-md py-2.5 text-sm font-medium" style="border-color:color-mix(in srgb,var(--border) 60%,transparent);color:var(--muted-foreground);background:var(--card)">Cancel</button>
+          <button onclick="addKitchenPrinter()" class="flex-1 font-semibold rounded-md py-2.5 text-sm" style="background:var(--amber-500);color:var(--amber-950)">Add Station</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function addKitchenPrinter() {
+  const nameInput = document.getElementById("new-kitchen-name");
+  const name = nameInput ? nameInput.value.trim() : "";
+  if (!name) { alert("Please enter a station name."); return; }
+  const iconBtn = document.querySelector('#kitchen-icon-picker button[data-selected="1"]') || document.querySelector('#kitchen-icon-picker button');
+  const colorBtn = document.querySelector('#kitchen-color-picker button[data-selected="1"]') || document.querySelector('#kitchen-color-picker button');
+  const icon = iconBtn ? iconBtn.dataset.icon : "🍳";
+  const color = colorBtn ? colorBtn.dataset.color : "#f59e0b";
+  const id = "kit-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "") + "-" + Date.now();
+  if (KITCHENS.find(k => k.name.toLowerCase() === name.toLowerCase())) { alert("A kitchen station with this name already exists."); return; }
+  KITCHENS.push({ id, name, icon, color });
+  showAddKitchenForm = false;
+  saveState(); render();
+}
+
+function removeKitchenPrinter(kitchenId) {
+  const kitchen = KITCHENS.find(k => k.id === kitchenId);
+  if (!kitchen) return;
+  const cats = CATEGORIES.filter(c => (c.kitchenId || "main") === kitchenId);
+  const fallbackId = KITCHENS.find(k => k.id !== kitchenId)?.id || "main";
+  if (cats.length > 0) {
+    if (!confirm(`Remove "${kitchen.name}"?\n\n${cats.length} categor${cats.length===1?'y':'ies'} assigned to this station will be moved to "${KITCHENS.find(k=>k.id===fallbackId)?.name || "Main Kitchen"}".`)) return;
+    cats.forEach(c => { c.kitchenId = fallbackId; });
+  } else {
+    if (!confirm(`Remove "${kitchen.name}"?`)) return;
+  }
+  KITCHENS = KITCHENS.filter(k => k.id !== kitchenId);
+  saveState(); render();
+}
 
 // ============ ADD CATEGORY FORM ============
 function renderAddCategoryForm() {
