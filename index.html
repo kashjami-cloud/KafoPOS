@@ -841,8 +841,14 @@ function printInvoice(orderId, isReprint) {
   if (o.status === "paid") {
     html += `<div class="line"></div>`;
     html += `<div class="item"><span class="name">Payment Method</span><span class="amt">${payMethod}</span></div>`;
-    html += `<div class="item"><span class="name">Amount Tendered</span><span class="amt">${fmtMoney(paid)}</span></div>`;
-    if (change > 0) html += `<div class="item bold"><span class="name">Change</span><span class="amt">${fmtMoney(change)}</span></div>`;
+    if (o.paymentMethod === "credit") {
+      html += `<div class="item"><span class="name">Charged To</span><span class="amt">${o.creditCustomerName||o.customerName||'—'}</span></div>`;
+      const creditCust = o.creditCustomerId ? CUSTOMERS.find(c=>c.id===o.creditCustomerId) : null;
+      if (creditCust) html += `<div class="item bold"><span class="name">Outstanding Balance</span><span class="amt">${fmtMoney(creditCust.balance)}</span></div>`;
+    } else {
+      html += `<div class="item"><span class="name">Amount Tendered</span><span class="amt">${fmtMoney(paid)}</span></div>`;
+      if (change > 0) html += `<div class="item bold"><span class="name">Change</span><span class="amt">${fmtMoney(change)}</span></div>`;
+    }
   }
   html += `<div class="line"></div>
     <div class="center thanks">Thank you for dining with us!</div>
@@ -982,17 +988,29 @@ function markServed(oid) { const o=state.orders.find(o=>o.id===oid); if(o){o.sta
 function payOrder(oid, method, amount) {
   const o = state.orders.find(o => o.id === oid);
   if (!o) return;
-  o.paid = amount;
+  o.paid = method === "credit" ? 0 : amount;
   o.paymentMethod = method;
   o.status = "paid";
   o.paidAt = Date.now();
   o.items.forEach(i => i.status = "served");
   TABLES.forEach(t => { if (t.currentOrderId === oid) { t.status = "free"; delete t.currentOrderId; } });
+  // Credit sale: charge to the selected customer's balance
+  if (method === "credit" && cashierCustomerId) {
+    const cust = CUSTOMERS.find(c => c.id === cashierCustomerId);
+    if (cust) {
+      cust.balance = (cust.balance || 0) + o.total;
+      cust.visits = (cust.visits || 0) + 1;
+      cust.totalSpent = (cust.totalSpent || 0) + o.total;
+      o.creditCustomerId = cust.id;
+      o.creditCustomerName = cust.name;
+    }
+  }
   // Switch to the Paid tab and select the just-paid invoice so the user
   // immediately sees the paid invoice detail (with reprint option) on the right.
   cashierQueueTab = "paid";
   cashierSelectedId = oid;
   cashierTendered = "";
+  cashierCustomerId = null;
   saveState();
   render();
   // Auto-trigger invoice print dialog after payment is completed
@@ -1198,6 +1216,8 @@ let showAddProductForm = false, showAddCategoryForm = false, showAddKitchenForm 
 let newProductImage = null;
 let newProductVariants = [];
 let cashierSelectedId = null, cashierMethod = "cash", cashierTendered = "";
+let cashierCustomerId = null; // for credit sales — which customer to charge
+let showNewCustomerForCredit = false; // inline new customer form in cashier
 let cashierQueueTab = "pending"; // "pending" (served) or "paid" (paid invoices for reprint)
 let mobileCartOpen = false;
 let mobileMenuOpen = false;
@@ -1711,7 +1731,10 @@ function renderCashier() {
 
   const change = selected ? Math.max(0, Number(cashierTendered || 0) - selected.total) : 0;
   const cashInsufficient = cashierMethod === "cash" && selected && !isPaidTab && Number(cashierTendered || 0) < selected.total;
-  const canPay = !!selected && !isPaidTab && !cashInsufficient;
+  const creditCustomer = cashierMethod === "credit" ? CUSTOMERS.find(c => c.id === (cashierCustomerId || null)) : null;
+  const creditOk = cashierMethod === "credit" && creditCustomer && creditCustomer.id !== "c-1";
+  const creditBlocked = cashierMethod === "credit" && !creditOk;
+  const canPay = !!selected && !isPaidTab && !cashInsufficient && !creditBlocked;
 
   const tabBtn = (key, label, count, icon) => `<button onclick="cashierQueueTab='${key}';cashierSelectedId=null;cashierTendered='';render()" class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-semibold transition-all" style="${isPaidTab=== (key==='paid')?'background:var(--amber-500);color:var(--amber-950)':'background:transparent;color:var(--muted-foreground)'}">${icon} ${label} <span class="text-[10px] px-1.5 py-0 rounded-full" style="${isPaidTab=== (key==='paid')?'background:color-mix(in srgb,var(--amber-950) 15%,transparent)':'background:color-mix(in srgb,var(--border) 60%,transparent)'}">${count}</span></button>`;
 
@@ -1733,7 +1756,7 @@ function renderCashier() {
               : 'background:color-mix(in srgb,var(--amber-500) 20%,transparent);color:var(--amber-300)';
             const badgeText = isPaidTab ? 'PAID' : o.status;
             const subLine = isPaidTab
-              ? `${o.items.length} items${o.tableLabel?' · '+o.tableLabel:''} · ${o.paymentMethod?o.paymentMethod.toUpperCase():'—'}`
+              ? `${o.items.length} items${o.tableLabel?' · '+o.tableLabel:''} · ${o.paymentMethod==='credit'?'📝 CREDIT':o.paymentMethod?o.paymentMethod.toUpperCase():'—'}`
               : `${o.items.length} items${o.tableLabel?' · '+o.tableLabel:''}`;
             const dateStr = isPaidTab && o.paidAt ? new Date(o.paidAt).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : `#${o.token}`;
             return `<button onclick="cashierSelectedId='${o.id}';cashierTendered='';render()" class="w-full text-left rounded-lg p-2.5 border" style="${isSel?'background:color-mix(in srgb,var(--amber-500) 15%,transparent);border-color:color-mix(in srgb,var(--amber-500) 60%,transparent)':'background:var(--card);border-color:color-mix(in srgb,var(--border) 40%,transparent)'}">
@@ -1760,10 +1783,39 @@ function renderCashier() {
           </ul>
         </div>
         <div><div class="text-sm font-medium mb-2">Payment Method</div>
-          <div class="grid grid-cols-3 gap-2">
-            ${["cash","card","wallet"].map(m=>`<button onclick="cashierMethod='${m}';render()" class="flex flex-col items-center gap-1 py-3 rounded-lg border" style="${cashierMethod===m?'background:color-mix(in srgb,var(--amber-500) 15%,transparent);border-color:color-mix(in srgb,var(--amber-500) 60%,transparent);color:var(--amber-300)':'background:var(--card);border-color:color-mix(in srgb,var(--border) 40%,transparent)'}"><span>${m==='cash'?'💵':m==='card'?'💳':'📱'}</span><span class="text-sm capitalize">${m}</span></button>`).join("")}
+          <div class="grid grid-cols-4 gap-2">
+            ${["cash","card","wallet","credit"].map(m=>`<button onclick="cashierMethod='${m}';render()" class="flex flex-col items-center gap-1 py-3 rounded-lg border" style="${cashierMethod===m?'background:color-mix(in srgb,var(--amber-500) 15%,transparent);border-color:color-mix(in srgb,var(--amber-500) 60%,transparent);color:var(--amber-300)':'background:var(--card);border-color:color-mix(in srgb,var(--border) 40%,transparent)'}"><span>${m==='cash'?'💵':m==='card'?'💳':m==='wallet'?'📱':'📝'}</span><span class="text-sm capitalize">${m}</span></button>`).join("")}
           </div>
         </div>
+        ${cashierMethod==="credit"?`<div class="space-y-2">
+          <div><div class="text-sm font-medium mb-1.5">Charge to Customer <span style="color:var(--muted-foreground);font-weight:400">(required)</span></div>
+            <div class="flex gap-2">
+              <select onchange="cashierCustomerId=this.value||null;showNewCustomerForCredit=false;render()" class="flex-1 rounded-lg px-3 py-2.5 text-sm outline-none" style="background:var(--input);border:1px solid color-mix(in srgb,var(--border) 60%,transparent);color:var(--foreground)">
+                <option value="">— Select Customer —</option>
+                ${CUSTOMERS.filter(c=>c.id!=="c-1").map(c=>`<option value="${c.id}" ${cashierCustomerId===c.id?"selected":""}>${c.name}${c.phone?' · '+c.phone:''} ${c.balance>0?'(Due: '+fmtMoney(c.balance)+')':''}</option>`).join("")}
+              </select>
+              <button onclick="showNewCustomerForCredit=!showNewCustomerForCredit;render()" class="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold border whitespace-nowrap transition-all hover:brightness-110" style="border-color:color-mix(in srgb,var(--amber-500) 40%,transparent);color:var(--amber-300);background:color-mix(in srgb,var(--amber-500) 8%,transparent)"><span class="text-sm">+</span> New</button>
+            </div>
+          </div>
+          ${showNewCustomerForCredit?`<div class="rounded-lg border p-3 space-y-2" style="border-color:color-mix(in srgb,var(--amber-500) 30%,transparent);background:color-mix(in srgb,var(--amber-500) 5%,transparent)">
+            <div class="text-xs font-semibold" style="color:var(--amber-300)">Add New Customer</div>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="credit-new-name" type="text" placeholder="Full Name" class="rounded-lg px-3 py-2 text-sm outline-none" style="background:var(--input);border:1px solid color-mix(in srgb,var(--border) 60%,transparent);color:var(--foreground)" autofocus/>
+              <input id="credit-new-phone" type="text" placeholder="Phone Number" class="rounded-lg px-3 py-2 text-sm outline-none" style="background:var(--input);border:1px solid color-mix(in srgb,var(--border) 60%,transparent);color:var(--foreground)"/>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="addCustomerForCredit()" class="flex-1 font-semibold rounded-md py-2 text-sm" style="background:var(--amber-500);color:var(--amber-950)">Add & Select</button>
+              <button onclick="showNewCustomerForCredit=false;render()" class="px-3 py-2 rounded-md text-sm border" style="border-color:color-mix(in srgb,var(--border) 60%,transparent);color:var(--muted-foreground)">Cancel</button>
+            </div>
+          </div>`:""}
+          ${creditCustomer?`<div class="rounded-lg border px-4 py-3 space-y-1.5 text-sm" style="border-color:color-mix(in srgb,#3b82f6 40%,transparent);background:color-mix(in srgb,#3b82f6 8%,transparent)">
+            <div class="flex justify-between"><span style="color:var(--muted-foreground)">Customer</span><span class="font-medium">${creditCustomer.name}</span></div>
+            <div class="flex justify-between"><span style="color:var(--muted-foreground)">Phone</span><span>${creditCustomer.phone||'—'}</span></div>
+            <div class="flex justify-between"><span style="color:var(--muted-foreground)">Current Due</span><span style="color:#fda4af">${fmtMoney(creditCustomer.balance)}</span></div>
+            <div class="flex justify-between pt-1.5 border-t font-semibold" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)"><span>New Due After This Sale</span><span style="color:#fda4af">${fmtMoney(creditCustomer.balance + (selected?selected.total:0))}</span></div>
+          </div>`:""}
+          ${creditBlocked?`<div class="rounded-lg border px-4 py-2.5 text-sm" style="border-color:color-mix(in srgb,#f43f5e 40%,transparent);background:color-mix(in srgb,#f43f5e 10%,transparent);color:#fda4af">⚠ Please select a customer to charge this credit sale to.</div>`:""}
+        </div>`:""}
         ${cashierMethod==="cash"?`<div class="space-y-3">
           <div><div class="text-sm font-medium mb-2">Amount Tendered</div>
             <input type="number" value="${cashierTendered}" oninput="cashierTendered=this.value;render();this.focus()" placeholder="0.00" class="w-full rounded-md px-3 py-3 text-2xl font-semibold tabular-nums" style="background:var(--input);color:var(--foreground)"/></div>
@@ -1774,7 +1826,7 @@ function renderCashier() {
           ${cashInsufficient?`<div class="rounded-lg border px-4 py-2.5 text-sm" style="border-color:color-mix(in srgb,#f43f5e 40%,transparent);background:color-mix(in srgb,#f43f5e 10%,transparent);color:#fda4af">⚠ Insufficient cash — tendered ${fmtMoney(Number(cashierTendered||0))} is less than total ${fmtMoney(selected.total)}. Please enter at least ${fmtMoney(selected.total)} or use quick-cash buttons above.</div>`:""}
         </div>`:""}
         <div class="grid grid-cols-[1fr_auto] gap-2 cashier-pay-row">
-          <button onclick="${canPay?`payOrder('${selected.id}',cashierMethod,cashierMethod==='cash'?Number(cashierTendered||0):${selected.total})`:`alert('Insufficient cash — please enter at least ${fmtMoney(selected.total)}')`}" class="font-semibold rounded-md py-3" style="${canPay?'background:#047857;color:#ecfdf5;cursor:pointer':'background:#374151;color:#9ca3af;cursor:not-allowed'}" ${!canPay?'disabled':''}>✓ Complete Payment</button>
+          <button onclick="${canPay?`payOrder('${selected.id}',cashierMethod,cashierMethod==='cash'?Number(cashierTendered||0):${selected.total})`:(creditBlocked?`alert('Please select a customer for credit sale.')`:`alert('Insufficient cash — please enter at least ${fmtMoney(selected.total)}')`) }" class="font-semibold rounded-md py-3" style="${canPay?'background:#047857;color:#ecfdf5;cursor:pointer':'background:#374151;color:#9ca3af;cursor:not-allowed'}" ${!canPay?'disabled':''}>✓ Complete Payment${cashierMethod==='credit'?' (Credit)':''}</button>
           <button onclick="printInvoice('${selected.id}')" class="flex items-center gap-1.5 px-4 rounded-md py-3 font-semibold whitespace-nowrap" style="background:color-mix(in srgb,var(--amber-500) 18%,transparent);color:var(--amber-300);border:1px solid color-mix(in srgb,var(--amber-500) 50%,transparent)" title="Print customer invoice">🖨 Print Invoice</button>
         </div>
       </div>`}
@@ -1802,7 +1854,7 @@ function renderCashierPaidDetail(o) {
         <div class="text-right">
           <div class="text-sm" style="color:var(--muted-foreground)">Total Paid</div>
           <div class="text-2xl font-bold" style="color:#6ee7b7">${fmtMoney(o.total)}</div>
-          <div class="text-[11px] mt-0.5" style="color:var(--muted-foreground)">${payMethod}${change>0?` · Change ${fmtMoney(change)}`:""}</div>
+          <div class="text-[11px] mt-0.5" style="color:var(--muted-foreground)">${payMethod}${o.paymentMethod==="credit"?' · CREDIT SALE':change>0?` · Change ${fmtMoney(change)}`:""}</div>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-2 text-xs mb-3">
@@ -1823,8 +1875,10 @@ function renderCashierPaidDetail(o) {
         ${o.tip>0?`<div class="flex justify-between"><span style="color:var(--muted-foreground)">Tip</span><span class="tabular-nums">${fmtMoney(o.tip)}</span></div>`:""}
         <div class="flex justify-between"><span style="color:var(--muted-foreground)">Tax</span><span class="tabular-nums">${fmtMoney(o.tax||0)}</span></div>
         <div class="flex justify-between pt-1 text-sm font-bold"><span>Total</span><span class="tabular-nums" style="color:#6ee7b7">${fmtMoney(o.total)}</span></div>
-        <div class="flex justify-between pt-1 border-t mt-1" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)"><span style="color:var(--muted-foreground)">Amount Tendered (${payMethod})</span><span class="tabular-nums">${fmtMoney(paidAmt)}</span></div>
-        ${change>0?`<div class="flex justify-between font-semibold"><span style="color:var(--amber-300)">Change Given</span><span class="tabular-nums" style="color:var(--amber-300)">${fmtMoney(change)}</span></div>`:""}
+        ${o.paymentMethod==="credit"?`<div class="flex justify-between pt-1 border-t mt-1" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)"><span style="color:var(--muted-foreground)">Charged To (Credit)</span><span class="tabular-nums">${o.creditCustomerName||o.customerName||'—'}</span></div>
+        ${o.creditPaymentReceived>0?`<div class="flex justify-between" style="color:#6ee7b7"><span>Credit Payment Received</span><span class="tabular-nums">${fmtMoney(o.creditPaymentReceived)}</span></div>`:""}`:
+        `<div class="flex justify-between pt-1 border-t mt-1" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)"><span style="color:var(--muted-foreground)">Amount Tendered (${payMethod})</span><span class="tabular-nums">${fmtMoney(paidAmt)}</span></div>
+        ${change>0?`<div class="flex justify-between font-semibold"><span style="color:var(--amber-300)">Change Given</span><span class="tabular-nums" style="color:var(--amber-300)">${fmtMoney(change)}</span></div>`:""}`}
       </div>
     </div>
     <div>
@@ -2082,7 +2136,7 @@ function renderDashboard() {
             <td class="px-2 py-2 font-medium desktop-only">#${o.token}</td>
             <td class="px-2 py-2 truncate max-w-[120px]">${o.customerName}</td>
             <td class="px-2 py-2 text-xs desktop-only" style="color:var(--muted-foreground)">${o.items.length} item${o.items.length!==1?"s":""}</td>
-            <td class="px-2 py-2 text-xs capitalize desktop-only">${o.paymentMethod||"—"}${o.paidAt?" <span style='color:#6ee7b7'>&#10003;</span>":""}</td>
+            <td class="px-2 py-2 text-xs capitalize desktop-only">${o.paymentMethod==='credit'?'📝 Credit':o.paymentMethod||"—"}${o.paidAt?" <span style='color:#6ee7b7'>&#10003;</span>":""}</td>
             <td class="px-2 py-2 text-right font-semibold tabular-nums" style="color:var(--amber-300)">${fmtMoney(o.total)}</td>
             <td class="px-2 py-2 text-center"><span class="text-[10px] px-2 py-0.5 rounded-full" style="${sc}">${o.status}</span></td>
           </tr>`;
@@ -2243,18 +2297,97 @@ function updateCategoryKitchen(categoryId, kitchenId) {
 
 // ============ CUSTOMERS ============
 function renderCustomers() {
+  const creditOrders = state.orders.filter(o => o.paymentMethod === "credit" && o.status === "paid");
   return `<div class="h-[calc(100vh-7.5rem)] overflow-y-auto p-4">
     <h2 class="text-base font-semibold mb-3">Customers (${CUSTOMERS.length})</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-      ${CUSTOMERS.map(c=>`<article class="surface rounded-xl p-4">
+      ${CUSTOMERS.map(c=>{
+        const custCreditOrders = creditOrders.filter(o => o.creditCustomerId === c.id);
+        const totalCredit = custCreditOrders.reduce((s,o) => s + o.total, 0);
+        const totalPaid = custCreditOrders.reduce((s,o) => s + (o.creditPaymentReceived || 0), 0);
+        const outstanding = (c.balance || 0);
+        return `<article class="surface rounded-xl p-4">
         <div class="flex items-start gap-3"><div class="h-12 w-12 rounded-full flex items-center justify-center text-lg font-bold" style="background:var(--amber-500);color:var(--amber-950)">${c.name.slice(0,1)}</div>
         <div class="flex-1 min-w-0"><div class="font-semibold truncate">${c.name}</div>${c.phone?`<div class="text-xs mt-0.5" style="color:var(--muted-foreground)">📞 ${c.phone}</div>`:""}</div></div>
-        <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t text-xs" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
+        <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t text-xs" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
           <div><div style="color:var(--muted-foreground)">Visits</div><div class="font-semibold">${c.visits}</div></div>
           <div><div style="color:var(--muted-foreground)">Spent</div><div class="font-semibold" style="color:var(--amber-300)">${fmtMoney(c.totalSpent)}</div></div>
-        </div></article>`).join("")}
+          <div><div style="color:var(--muted-foreground)">Credit Due</div><div class="font-semibold" style="color:${outstanding>0?'#fda4af':'#6ee7b7'}">${fmtMoney(outstanding)}</div></div>
+        </div>
+        ${c.id!=="c-1"?`<div class="mt-2 pt-2 border-t" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
+          <div class="flex gap-2">
+            <button onclick="recordCreditPayment('${c.id}')" class="flex-1 text-[10px] font-semibold px-2 py-1.5 rounded-md border transition-all hover:brightness-110" style="border-color:color-mix(in srgb,#10b981 40%,transparent);color:#6ee7b7;background:color-mix(in srgb,#10b981 8%,transparent)">${outstanding>0?'💵 Record Payment':'✓ No Due'}</button>
+            ${custCreditOrders.length>0?`<button onclick="showCreditHistory('${c.id}')" class="text-[10px] font-semibold px-2 py-1.5 rounded-md border" style="border-color:color-mix(in srgb,var(--border) 60%,transparent);color:var(--muted-foreground)">${custCreditOrders.length} Credit Sale${custCreditOrders.length>1?'s':''}</button>`:""}
+          </div>
+        </div>`:""}
+      </article>`}).join("")}
+    </div>
+    <div id="credit-history-panel"></div>
+  </div>`;
+}
+
+function showCreditHistory(custId) {
+  const c = CUSTOMERS.find(x => x.id === custId);
+  if (!c) return;
+  const orders = state.orders.filter(o => o.paymentMethod === "credit" && o.creditCustomerId === custId && o.status === "paid").sort((a,b) => b.paidAt - a.paidAt);
+  const panel = document.getElementById("credit-history-panel");
+  if (!panel) return;
+  panel.innerHTML = `<div class="mt-4 surface rounded-xl p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold">Credit History — ${c.name}</h3>
+      <button onclick="this.closest('#credit-history-panel').innerHTML=''" class="text-lg leading-none" style="color:var(--muted-foreground)">&times;</button>
+    </div>
+    ${orders.length===0?`<div class="text-xs" style="color:var(--muted-foreground)">No credit sales recorded.</div>`:
+    `<div class="space-y-2 text-xs">${orders.map(o=>`<div class="rounded-lg border p-2.5" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
+      <div class="flex items-center justify-between"><span class="font-medium">#${o.token} · ${o.number}</span><span style="color:var(--amber-300)">${fmtMoney(o.total)}</span></div>
+      <div style="color:var(--muted-foreground)">${new Date(o.paidAt).toLocaleString()} · ${o.items.length} items${o.creditPaymentReceived>0?' · <span style="color:#6ee7b7">Paid '+fmtMoney(o.creditPaymentReceived)+'</span>':''}</div>
+    </div>`).join("")}</div>`}
+    <div class="mt-2 pt-2 border-t flex justify-between text-sm font-semibold" style="border-color:color-mix(in srgb,var(--border) 40%,transparent)">
+      <span>Total Credit Sales</span><span style="color:var(--amber-300)">${fmtMoney(orders.reduce((s,o)=>s+o.total,0))}</span>
+    </div>
+    <div class="flex justify-between text-sm font-semibold">
+      <span>Outstanding Balance</span><span style="color:${c.balance>0?'#fda4af':'#6ee7b7'}">${fmtMoney(c.balance)}</span>
     </div>
   </div>`;
+}
+
+function recordCreditPayment(custId) {
+  const c = CUSTOMERS.find(x => x.id === custId);
+  if (!c) return;
+  const outstanding = c.balance || 0;
+  if (outstanding <= 0) { alert(`${c.name} has no outstanding balance.`); return; }
+  const amountStr = prompt(`Record payment for ${c.name}\n\nOutstanding: ${fmtMoney(outstanding)}\n\nEnter amount received:`);
+  if (amountStr === null) return;
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0) { alert("Please enter a valid amount."); return; }
+  if (amount > outstanding) { if (!confirm(`Amount ${fmtMoney(amount)} exceeds outstanding ${fmtMoney(outstanding)}. Record ${fmtMoney(outstanding)} instead?`)) return; c.balance = 0; } else { c.balance -= amount; }
+  // Mark credit orders as paid (partial or full)
+  const creditOrders = state.orders.filter(o => o.paymentMethod === "credit" && o.creditCustomerId === custId && o.status === "paid" && !o.creditPaymentReceived).sort((a,b) => a.paidAt - b.paidAt);
+  let remaining = amount;
+  creditOrders.forEach(o => {
+    if (remaining <= 0) return;
+    const payable = Math.min(remaining, o.total);
+    o.creditPaymentReceived = payable;
+    remaining -= payable;
+  });
+  saveState(); render();
+  alert(`Payment of ${fmtMoney(amount)} recorded for ${c.name}.\nRemaining balance: ${fmtMoney(c.balance)}`);
+}
+
+// ============ CASHIER: Add new customer for credit sale ============
+function addCustomerForCredit() {
+  const nameInput = document.getElementById("credit-new-name");
+  const phoneInput = document.getElementById("credit-new-phone");
+  const name = nameInput ? nameInput.value.trim() : "";
+  const phone = phoneInput ? phoneInput.value.trim() : "";
+  if (!name) { alert("Please enter customer name."); return; }
+  const id = "c-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "") + "-" + Date.now();
+  if (CUSTOMERS.find(c => c.name.toLowerCase() === name.toLowerCase())) { alert("A customer with this name already exists."); return; }
+  const newCust = { id, name, phone, balance: 0, visits: 0, totalSpent: 0 };
+  CUSTOMERS.push(newCust);
+  cashierCustomerId = id;
+  showNewCustomerForCredit = false;
+  saveState(); render();
 }
 
 // ============ TABLES ============
